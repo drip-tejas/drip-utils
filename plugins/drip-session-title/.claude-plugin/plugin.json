@@ -2,7 +2,7 @@
   "name": "drip-session-title",
   "displayName": "Drip Session Title",
   "version": "0.1.0",
-  "description": "Names each session after its git branch and your first prompt, replacing the auto-generated title. Needs python3 (stdlib only).",
+  "description": "Names each session after what your first prompt is about, using a short Haiku call, instead of the auto-generated title. Needs python3 (stdlib only).",
   "author": {
     "name": "Drip Digital"
   },
