@@ -1,31 +1,54 @@
-"""Run: python3 test/test_session_title.py"""
+"""Run: python3 test/test_session_title.py
+
+A fake `claude` on PATH stands in for the model, so the suite never makes a
+real call. PATH is otherwise /usr/bin:/bin, which keeps any real claude out.
+"""
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 
 HOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hooks", "scripts", "session-title.py")
 
-
-def run(cwd, prompt, transcript):
-    payload = {"hook_event_name": "UserPromptSubmit", "prompt": prompt, "cwd": cwd,
-               "transcript_path": transcript, "session_id": "s1"}
-    out = subprocess.run(["python3", HOOK], input=json.dumps(payload),
-                         capture_output=True, text=True, check=True).stdout
-    return json.loads(out)["hookSpecificOutput"]["sessionTitle"] if out.strip() else None
+FAKE_CLAUDE = """#!/bin/sh
+printf '%s\\n' "$@" > "$FAKE_LOG"
+case "$FAKE_MODE" in
+  ok) printf '%s' "$FAKE_OUT" ;;
+  fail) exit 1 ;;
+  slow) sleep 5; printf 'too late' ;;
+esac
+"""
 
 
 class SessionTitle(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.transcript = os.path.join(self.tmp, "t.jsonl")
+        self.log = os.path.join(self.tmp, "claude-args")
+        self.bin = os.path.join(self.tmp, "bin")
+        os.mkdir(self.bin)
+        fake = os.path.join(self.bin, "claude")
+        with open(fake, "w") as f:
+            f.write(FAKE_CLAUDE)
+        os.chmod(fake, 0o755)
+        self.cwd = os.path.join(self.tmp, "repo")
+        os.mkdir(self.cwd)
+        subprocess.run(["git", "init", "-q", "-b", "feat/leads", self.cwd], check=True)
 
-    def repo(self, branch):
-        d = os.path.join(self.tmp, "repo")
-        os.mkdir(d)
-        subprocess.run(["git", "init", "-q", "-b", branch, d], check=True)
-        return d
+    def run_hook(self, prompt, mode="ok", out="Structured notes display rules", path=None, env=None, stdin=None):
+        payload = {"hook_event_name": "UserPromptSubmit", "prompt": prompt, "cwd": self.cwd,
+                   "transcript_path": self.transcript, "session_id": "s1"}
+        e = {"PATH": path or f"{self.bin}:/usr/bin:/bin", "FAKE_LOG": self.log,
+             "FAKE_MODE": mode, "FAKE_OUT": out, **(env or {})}
+        r = subprocess.run([sys.executable, HOOK], input=stdin if stdin is not None else json.dumps(payload),
+                           capture_output=True, text=True, env=e)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return json.loads(r.stdout)["hookSpecificOutput"]["sessionTitle"] if r.stdout.strip() else None
+
+    def claude_was_called(self):
+        return os.path.exists(self.log)
 
     def write_transcript(self, *records):
         # Compact separators, the way Claude Code writes its transcripts.
@@ -33,38 +56,62 @@ class SessionTitle(unittest.TestCase):
             for r in records:
                 f.write(json.dumps(r, separators=(",", ":")) + "\n")
 
-    def test_branch_and_first_prompt_line(self):
-        d = self.repo("feat/leads")
-        self.assertEqual(run(d, "fix the throttle\nmore detail", self.transcript),
-                         "feat/leads · fix the throttle")
+    def test_uses_the_model_title(self):
+        self.assertEqual(self.run_hook("Just for this pre-launch phase:\nnotes skip the gate"),
+                         "Structured notes display rules")
 
-    def test_long_prompt_is_truncated(self):
-        d = self.repo("main")
-        title = run(d, "x" * 200, self.transcript)
-        self.assertEqual(title, "main · " + "x" * 59 + "…")
+    def test_the_model_sees_the_whole_prompt_not_just_the_first_line(self):
+        self.run_hook("Just for this pre-launch phase:\nnotes skip the gate")
+        with open(self.log) as f:
+            self.assertIn("notes skip the gate", f.read())
 
-    def test_folder_name_outside_a_repo(self):
-        d = os.path.join(self.tmp, "notes")
-        os.mkdir(d)
-        self.assertEqual(run(d, "hello", self.transcript), "notes · hello")
+    def test_title_never_carries_the_branch(self):
+        self.assertNotIn("feat/leads", self.run_hook("fix the throttle"))
 
-    def test_existing_title_is_left_alone(self):
-        d = self.repo("main")
+    def test_model_output_is_cleaned(self):
+        self.assertEqual(self.run_hook("x", out='"Fix the parser."\nsecond line'), "Fix the parser")
+
+    def test_long_model_output_is_capped(self):
+        self.assertEqual(self.run_hook("x", out="y" * 200), "y" * 59 + "…")
+
+    def test_falls_back_to_the_first_line_when_the_model_fails(self):
+        self.assertEqual(self.run_hook("fix the throttle\nmore detail", mode="fail"), "fix the throttle")
+
+    def test_falls_back_when_the_model_is_too_slow(self):
+        title = self.run_hook("fix the throttle", mode="slow", env={"DRIP_SESSION_TITLE_TIMEOUT": "1"})
+        self.assertEqual(title, "fix the throttle")
+
+    def test_uses_the_running_claude_binary_when_none_is_on_path(self):
+        # IDE extensions bundle their own CLI and export its path; PATH may have no claude.
+        title = self.run_hook("x", path="/usr/bin:/bin",
+                              env={"CLAUDE_CODE_EXECPATH": os.path.join(self.bin, "claude")})
+        self.assertEqual(title, "Structured notes display rules")
+
+    def test_falls_back_when_claude_is_not_installed(self):
+        self.assertEqual(self.run_hook("fix the throttle", path="/usr/bin:/bin"), "fix the throttle")
+
+    def test_fallback_is_capped(self):
+        self.assertEqual(self.run_hook("x" * 200, mode="fail"), "x" * 59 + "…")
+
+    def test_existing_title_is_left_alone_without_calling_the_model(self):
         self.write_transcript({"type": "custom-title", "customTitle": "mine"})
-        self.assertIsNone(run(d, "second prompt", self.transcript))
+        self.assertIsNone(self.run_hook("second prompt"))
+        self.assertFalse(self.claude_was_called())
 
     def test_the_words_custom_title_in_a_message_do_not_count_as_a_title(self):
-        d = self.repo("main")
         self.write_transcript({"type": "user", "message": {"content": '{"type":"custom-title"}'}})
-        self.assertEqual(run(d, "hello", self.transcript), "main · hello")
+        self.assertEqual(self.run_hook("hello"), "Structured notes display rules")
+
+    def test_the_title_call_itself_is_never_titled(self):
+        self.assertIsNone(self.run_hook("hello", env={"DRIP_SESSION_TITLE_CHILD": "1"}))
+        self.assertFalse(self.claude_was_called())
 
     def test_blank_prompt_sets_nothing(self):
-        d = self.repo("main")
-        self.assertIsNone(run(d, "   \n", self.transcript))
+        self.assertIsNone(self.run_hook("   \n"))
+        self.assertFalse(self.claude_was_called())
 
     def test_malformed_stdin_is_a_silent_no_op(self):
-        r = subprocess.run(["python3", HOOK], input="not json", capture_output=True, text=True)
-        self.assertEqual((r.returncode, r.stdout), (0, ""))
+        self.assertIsNone(self.run_hook("", stdin="not json"))
 
 
 if __name__ == "__main__":
