@@ -1,4 +1,4 @@
-# drip-timestamps — design
+# drip-timestamps: design
 
 **Date:** 2026-08-09
 **Status:** approved, implemented
@@ -20,7 +20,7 @@ Two changes from the upstream plugin:
 ## Architecture
 
 The two halves share nothing but a call to `date`. They are split by
-**dependency**, not by feature — that split is what lets the zero-dependency
+**dependency**, not by feature. That split is what lets the zero-dependency
 half keep working when the other cannot run.
 
 | Hook | Script | Dependency | Output field | Reach |
@@ -32,7 +32,7 @@ half keep working when the other cannot run.
 
 Its payload is built entirely from `date` output. No untrusted text reaches the
 JSON, so `printf` emits it safely. The single exception is `DRIP_TS_FORMAT`,
-whose formatted result is interpolated into the payload — `tr -d '"\\'` strips
+whose formatted result is interpolated into the payload, and `tr -d '"\\'` strips
 the only two characters that could produce malformed JSON. That sanitizer is
 load-bearing and has a dedicated test.
 
@@ -47,7 +47,7 @@ costs no install.
 ### Why `systemMessage` for prompt stamps
 
 `MessageDisplay` is documented in the Claude Code binary as firing "while an
-**assistant** message streams" — it never fires for user messages, so it cannot
+**assistant** message streams". It never fires for user messages, so it cannot
 stamp prompts. `systemMessage` is documented as "Display a message to the user
 (all hooks)", making it the only available mechanism, and the one most likely to
 render outside the terminal.
@@ -78,12 +78,12 @@ string, `date` failure.
 **The `SessionStart` dependency-check hook.** Upstream needs it because without
 `jq` it degrades to completely silent. Ours cannot: the pure-bash half keeps
 stamping prompts regardless, so a missing `python3` presents as "reply stamps
-stopped, prompt stamps didn't" — the plugin diagnoses itself. A hook that
+stopped, prompt stamps didn't", so the plugin diagnoses itself. A hook that
 restates what the behavior already shows is not worth its file.
 
 **Elapsed time and response duration.** Considered and cut as out of scope.
 `MessageDisplay` fires per chunk with no completion event, so duration would
-need session-JSONL parsing — a different and much larger design.
+need session-JSONL parsing, a different and much larger design.
 
 ## Testing
 
@@ -98,8 +98,8 @@ keep. Verified passing.
 ## Known unknown
 
 `systemMessage`'s schema example reads `"Warning shown to user in UI"`. Whether
-the VS Code webview styles it as a warning banner — visually loud on every
-prompt — is unverified until a session restart. If it renders badly, the
+the VS Code webview styles it as a warning banner (visually loud on every
+prompt) is unverified until a session restart. If it renders badly, the
 fallback is `DRIP_TS_SHOW_PROMPT=false`, keeping the model-facing half. That
 would mean visible prompt stamps are not achievable through the hook system at
 all, which is worth knowing before any further polish.

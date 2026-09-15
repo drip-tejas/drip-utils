@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One runnable check. No framework, no fixtures — just asserts.
+# One runnable check. No framework, no fixtures, just asserts.
 #
 # The test that earns its keep is ROUND-TRIP: feed message-stamp.sh a delta full
 # of quotes, backslashes, newlines and emoji, and prove the text comes back

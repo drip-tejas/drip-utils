@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UserPromptSubmit hook — stamps YOUR prompt, both on screen and for the model.
+# UserPromptSubmit hook: stamps YOUR prompt, both on screen and for the model.
 #
 # Zero dependencies. Every byte of this payload is built from `date`, so no
 # untrusted text ever reaches the JSON and printf can emit it safely. That is

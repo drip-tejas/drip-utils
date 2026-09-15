@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Shared timezone resolver — sourced by both stamp hooks.
+# Shared timezone resolver, sourced by both stamp hooks.
 #
 # Forked from zoharbabin/claude-code-message-timestamps (MIT). Kept verbatim in
 # substance: it is a correct lookup table and there is no reason to retype it.
 #
 # `date` reads the TZ env var, but TZ does NOT reliably accept short
-# abbreviations — `TZ=KST` is not a valid POSIX TZ and silently renders as UTC.
+# abbreviations: `TZ=KST` is not a valid POSIX TZ and silently renders as UTC.
 # So resolve_tz maps common abbreviations to IANA zone names and passes anything
 # else (IANA names like America/Denver) straight through. The abbreviation shown
 # on screen still comes from `date '+%Z'`, so a resolved zone displays its own
-# current abbreviation — America/Denver correctly shows MST or MDT depending on
+# current abbreviation: America/Denver correctly shows MST or MDT depending on
 # daylight saving.
 #
 # resolve_tz RAW prints the resolved TZ value on stdout. It never errors.

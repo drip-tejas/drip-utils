@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MessageDisplay hook — prepends [HH:MM:SS] to each assistant message on screen.
+# MessageDisplay hook: prepends [HH:MM:SS] to each assistant message on screen.
 #
 # Display-only: MessageDisplay never changes the stored transcript or what the
 # model sees, so the marker cannot confuse Claude.
@@ -8,7 +8,7 @@
 # stamp only index 0, so the marker appears once per message rather than before
 # every chunk.
 #
-# Why python3 and not bash: `delta` is arbitrary assistant text — quotes,
+# Why python3 and not bash: `delta` is arbitrary assistant text: quotes,
 # backslashes, newlines, emoji, half-open code fences. Re-emitting that inside
 # JSON requires a real encoder. Hand-rolled bash escaping corrupts output, and
 # corrupting the assistant's message is far worse than showing no timestamp.
@@ -19,7 +19,7 @@
 set -uo pipefail
 
 # Fail safe, three ways. Emitting nothing makes Claude Code display the original
-# text unchanged — never swallow assistant output.
+# text unchanged. Never swallow assistant output.
 command -v python3 >/dev/null 2>&1 || exit 0
 
 if [ "${DRIP_TS_ENABLED:-true}" = "false" ]; then

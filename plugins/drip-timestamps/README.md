@@ -1,7 +1,7 @@
 # drip-timestamps
 
-Local time on **both** sides of a Claude Code conversation — your prompts and
-Claude's replies — plus the time each prompt was sent, given to the model.
+Local time on **both** sides of a Claude Code conversation (your prompts and
+Claude's replies), plus the time each prompt was sent, given to the model.
 
 ```
 [19:15:18] you: fix the parser
@@ -18,7 +18,7 @@ claude plugin marketplace add drip-tejas/drip-utils
 claude plugin install drip-timestamps@drip-utils
 ```
 
-Restart Claude Code — plugins load at session start.
+Restart Claude Code. Plugins load at session start.
 
 ## Requirements
 
@@ -63,8 +63,8 @@ untouched. A timestamp plugin should never be able to eat a message.
 bash test/run-tests.sh
 ```
 
-21 assertions. The one that matters feeds an adversarial delta — quotes,
-backslashes, newlines, emoji, shell metacharacters — through the display hook
+21 assertions. The one that matters feeds an adversarial delta (quotes,
+backslashes, newlines, emoji, shell metacharacters) through the display hook
 and asserts it returns byte-identical with only the stamp added.
 
 ## License
