@@ -13,7 +13,7 @@
     {
       "name": "drip-session-title",
       "source": "./plugins/drip-session-title",
-      "description": "Names each session after its git branch and your first prompt."
+      "description": "Names each session after what your first prompt is about."
     }
   ]
 }
