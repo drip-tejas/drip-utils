@@ -1,0 +1,11 @@
+{
+  "name": "drip-timestamps",
+  "displayName": "Drip Timestamps",
+  "version": "0.1.0",
+  "description": "Local-time stamps on your prompts and on Claude's replies. Prompt stamps need no dependencies; reply stamps use python3's stdlib json.",
+  "author": {
+    "name": "Drip Digital"
+  },
+  "license": "MIT",
+  "keywords": ["timestamps", "time", "clock", "hooks", "session-tracking"]
+}

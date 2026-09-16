@@ -1,0 +1,13 @@
+{
+  "name": "drip-session-title",
+  "displayName": "Drip Session Title",
+  "version": "0.1.0",
+  "description": "Names each session after what your first prompt is about, using a short Haiku call, instead of the auto-generated title. Needs python3 (stdlib only).",
+  "author": {
+    "name": "Drip Digital"
+  },
+  "homepage": "https://github.com/drip-tejas/drip-utils",
+  "repository": "https://github.com/drip-tejas/drip-utils",
+  "license": "MIT",
+  "keywords": ["session", "title", "rename", "hooks"]
+}

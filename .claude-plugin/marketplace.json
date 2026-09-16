@@ -1,0 +1,19 @@
+{
+  "name": "drip-utils",
+  "owner": {
+    "name": "Drip Digital"
+  },
+  "description": "Small hooks that make Claude Code sessions easier to follow.",
+  "plugins": [
+    {
+      "name": "drip-timestamps",
+      "source": "./plugins/drip-timestamps",
+      "description": "Stamps your prompts and Claude's replies with local time, and tells the model when each prompt was sent."
+    },
+    {
+      "name": "drip-session-title",
+      "source": "./plugins/drip-session-title",
+      "description": "Names each session after what your first prompt is about."
+    }
+  ]
+}
