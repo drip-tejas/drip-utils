@@ -178,13 +178,15 @@ class ManualRenameWins(Base):
 
     def test_a_torn_transcript_read_never_causes_a_rename(self):
         # Claude Code rewrites this file under us; a read that misses the marker
-        # must not be read as "never titled".
-        self.run_hook("first")
-        title, _ = self.title_within()
+        # must not be read as "never titled". RENAME_AT is pinned out of reach so
+        # that the only thing this can catch is the torn read.
+        env = {"DRIP_SESSION_TITLE_RENAME_AT": "999"}
+        self.run_hook("first", env=env)
+        title, _ = self.title_within(env=env)
         self.assertIsNotNone(title)
         open(self.transcript, "w").close()  # the torn read: file momentarily empty
         for i in range(30):
-            self.assertIsNone(self.run_hook(f"later {i}", out="Wrong new name"))
+            self.assertIsNone(self.run_hook(f"later {i}", out="Wrong new name", env=env))
 
 
 class SecondNaming(Base):
