@@ -126,6 +126,49 @@ class Naming(Base):
         self.assertEqual(title, "y" * 59 + "…")
 
 
+class InjectedBlocks(Base):
+    """The IDE can put tagged blocks (e.g. <browser_instruction>) ahead of what
+    the user typed. Left in, they fill the trimmed prompt and every session is
+    titled after the block."""
+    BLOCK = "<browser_instruction># Claude in Chrome\n" + "guidance " * 200 + "</browser_instruction>"
+
+    def wait_for_model(self):
+        for _ in range(20):
+            if self.claude_was_called():
+                return
+            time.sleep(0.25)
+
+    def test_a_leading_tagged_block_is_not_sent_to_the_model(self):
+        self.run_hook(self.BLOCK + "the session renamer is not working")
+        self.wait_for_model()
+        args = self.model_args()
+        self.assertIn("the session renamer is not working", args)
+        self.assertNotIn("browser_instruction", args)
+
+    def test_several_leading_blocks_are_all_skipped(self):
+        self.run_hook("<a>one</a>\n<b x=\"1\">two\nlines</b>\n" + "fix the throttle")
+        self.wait_for_model()
+        args = self.model_args()
+        self.assertIn("fix the throttle", args)
+        self.assertNotIn("two", args)
+
+    def test_a_prompt_that_is_only_a_block_is_sent_as_is(self):
+        self.run_hook("<note>rename the leads route</note>")
+        self.wait_for_model()
+        self.assertIn("rename the leads route", self.model_args())
+
+    def test_a_tag_later_in_the_prompt_is_kept(self):
+        self.run_hook("why does <Index> render twice")
+        self.wait_for_model()
+        self.assertIn("why does <Index> render twice", self.model_args())
+
+    def test_the_rename_does_not_see_the_block_either(self):
+        self.run_hook(self.BLOCK + "the session renamer is not working")
+        with open(os.path.join(self.state, "s1.json")) as f:
+            saved = json.load(f)["prompts"]
+        self.assertEqual(saved, ["the session renamer is not working"])
+
+
 class NeverBlocks(Base):
     def test_a_slow_model_does_not_delay_the_prompt(self):
         start = time.time()
