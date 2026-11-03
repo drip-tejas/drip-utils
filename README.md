@@ -14,7 +14,7 @@ Restart Claude Code after installing. Plugins load at session start.
 | Plugin | What it does | Needs |
 |---|---|---|
 | [drip-timestamps](plugins/drip-timestamps) | Local-time stamps on your prompts and Claude's replies, and tells the model when each prompt was sent | nothing for prompt stamps, `python3` for reply stamps |
-| [drip-session-title](plugins/drip-session-title) | Names each session after what your first prompt is about, using a short Haiku call | `python3`, a logged-in Claude Code |
+| [drip-session-title](plugins/drip-session-title) | Names each session after what it is about, using a short Haiku call that never makes your prompt wait | `python3`, a logged-in Claude Code |
 
 ## Tests
 
