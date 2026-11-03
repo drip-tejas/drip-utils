@@ -74,7 +74,10 @@ is still read for one purpose: spotting a title the hook did not write, which
 means you ran `/rename`.
 
 The prompt sent to Haiku is trimmed to 600 characters. Latency scales with
-input, and sending up to 4000 made the call take 18 seconds.
+input, and sending up to 4000 made the call take 18 seconds. Tagged blocks at
+the start of the prompt, such as the `<browser_instruction>` block the IDE adds
+when Claude in Chrome is on, are dropped first. One of those fills all 600
+characters, so leaving it in titled every session after the block.
 
 Each session costs one small Haiku request, or two if it runs long enough to be
 renamed.
