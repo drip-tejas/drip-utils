@@ -21,6 +21,7 @@ Tests: python3 test/test_session_title.py
 """
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -66,6 +67,25 @@ def save(path, state):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f)
     os.replace(tmp, path)
+
+
+LEADING_BLOCK = re.compile(r"\s*<([A-Za-z][\w.-]*)\b[^>]*>.*?</\1>", re.S)
+
+
+def skip_leading_blocks(prompt):
+    """Drop tagged blocks the IDE puts ahead of what the user typed.
+
+    A <browser_instruction> block alone is longer than MAX_PROMPT_CHARS, so
+    left in it is all the model sees. A prompt that is nothing but blocks is
+    kept as is, so there is still something to title.
+    """
+    rest = prompt
+    while True:
+        m = LEADING_BLOCK.match(rest)
+        if not m:
+            break
+        rest = rest[m.end():]
+    return rest.strip() or prompt
 
 
 def clean(text):
@@ -149,7 +169,7 @@ def main():
     if os.environ.get("DRIP_SESSION_TITLE_CHILD"):
         return
     data = json.load(sys.stdin)
-    prompt = (data.get("prompt") or "").strip()
+    prompt = skip_leading_blocks((data.get("prompt") or "").strip())
     if not prompt:
         return
 
