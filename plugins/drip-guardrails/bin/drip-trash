@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# drip-trash: the reversible delete that drip-guardrails points at instead of rm.
+#
+#   drip-trash PATH...          move paths into the trash, print how to restore
+#   drip-trash --list           show trash batches
+#   drip-trash --restore BATCH  put a batch back where it came from
+#   drip-trash --empty BATCH    actually delete one batch (asks a human to type it)
+#
+# Trash lives in $DRIP_GUARD_TRASH (default ~/.drip-trash). Each call makes one
+# batch directory named by UTC time, with a MANIFEST.tsv of original paths. Files
+# keep their absolute path under the batch, so two files with the same name do
+# not collide and restore is a plain mv back.
+set -euo pipefail
+
+TRASH="${DRIP_GUARD_TRASH:-$HOME/.drip-trash}"
+TRASH="${TRASH/#\~/$HOME}"
+
+usage() { sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+
+abs() {
+  local p="$1"
+  if [ -d "$p" ]; then (cd "$p" && pwd -P)
+  else
+    local d; d="$(cd "$(dirname "$p")" && pwd -P)"
+    printf '%s/%s\n' "$d" "$(basename "$p")"
+  fi
+}
+
+[ $# -eq 0 ] && usage 1
+
+case "$1" in
+  -h|--help) usage 0 ;;
+  --list)
+    [ -d "$TRASH" ] || { echo "trash is empty ($TRASH)"; exit 0; }
+    for b in "$TRASH"/*/; do
+      [ -f "$b/MANIFEST.tsv" ] || continue
+      n=$(wc -l < "$b/MANIFEST.tsv" | tr -d ' ')
+      printf '%s  %s item(s)\n' "$(basename "$b")" "$n"
+      cut -f1 "$b/MANIFEST.tsv" | sed 's/^/    /'
+    done
+    exit 0 ;;
+  --restore)
+    b="$TRASH/${2:?batch name required}"
+    [ -f "$b/MANIFEST.tsv" ] || { echo "no such batch: $2" >&2; exit 1; }
+    while IFS=$'\t' read -r orig; do
+      [ -n "$orig" ] || continue
+      src="$b/payload$orig"
+      if [ -e "$orig" ]; then
+        echo "skip (exists): $orig" >&2; continue
+      fi
+      mkdir -p "$(dirname "$orig")"
+      mv "$src" "$orig"
+      echo "restored: $orig"
+    done < "$b/MANIFEST.tsv"
+    exit 0 ;;
+  --empty)
+    b="$TRASH/${2:?batch name required}"
+    [ -d "$b" ] || { echo "no such batch: $2" >&2; exit 1; }
+    if [ ! -t 0 ]; then
+      echo "refusing: --empty needs a human at a terminal" >&2; exit 1
+    fi
+    printf 'Type the batch name to delete it for good: '
+    read -r confirm
+    [ "$confirm" = "$2" ] || { echo "aborted"; exit 1; }
+    /bin/rm -rf -- "$b"
+    echo "emptied $2"
+    exit 0 ;;
+esac
+
+batch="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+dest="$TRASH/$batch"
+mkdir -p "$dest/payload"
+: > "$dest/MANIFEST.tsv"
+moved=0
+for p in "$@"; do
+  if [ ! -e "$p" ] && [ ! -L "$p" ]; then
+    echo "not found: $p" >&2; continue
+  fi
+  a="$(abs "$p")"
+  case "$a" in
+    /|"$HOME"|/home|/Users|/etc|/usr|/var|/bin|/sbin|/lib|/opt)
+      echo "refusing to trash $a" >&2; continue ;;
+  esac
+  mkdir -p "$dest/payload$(dirname "$a")"
+  mv -- "$a" "$dest/payload$a"
+  printf '%s\n' "$a" >> "$dest/MANIFEST.tsv"
+  moved=$((moved + 1))
+done
+if [ "$moved" -eq 0 ]; then
+  /bin/rm -rf -- "$dest"
+  echo "nothing trashed" >&2
+  exit 1
+fi
+echo "trashed $moved item(s) to $dest"
+echo "restore with: $0 --restore $batch"

@@ -1,0 +1,19 @@
+{
+  "name": "drip-guardrails",
+  "displayName": "Drip Guardrails",
+  "version": "0.1.0",
+  "description": "System-level safety rails for every tool call: no PR merges or pushes to protected branches, no production writes, no irreversible deletes, no reading or copying secrets. Works in every permission mode.",
+  "author": {
+    "name": "Drip Digital"
+  },
+  "homepage": "https://github.com/drip-tejas/drip-utils",
+  "repository": "https://github.com/drip-tejas/drip-utils",
+  "license": "MIT",
+  "keywords": [
+    "safety",
+    "guardrails",
+    "permissions",
+    "secrets",
+    "hooks"
+  ]
+}

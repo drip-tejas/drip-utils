@@ -14,6 +14,11 @@
       "name": "drip-session-title",
       "source": "./plugins/drip-session-title",
       "description": "Names each session after what it is about, without ever making your prompt wait."
+    },
+    {
+      "name": "drip-guardrails",
+      "source": "./plugins/drip-guardrails",
+      "description": "Safety rails for every tool call: no PR merges or protected-branch pushes, no production writes, reversible deletes only, secrets never read or copied."
     }
   ]
 }

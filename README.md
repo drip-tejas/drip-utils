@@ -7,6 +7,7 @@ its own, so install only the ones you want.
 claude plugin marketplace add drip-tejas/drip-utils
 claude plugin install drip-timestamps@drip-utils
 claude plugin install drip-session-title@drip-utils
+claude plugin install drip-guardrails@drip-utils
 ```
 
 Restart Claude Code after installing. Plugins load at session start.
@@ -15,12 +16,14 @@ Restart Claude Code after installing. Plugins load at session start.
 |---|---|---|
 | [drip-timestamps](plugins/drip-timestamps) | Local-time stamps on your prompts and Claude's replies, and tells the model when each prompt was sent | nothing for prompt stamps, `python3` for reply stamps |
 | [drip-session-title](plugins/drip-session-title) | Names each session after what it is about, using a short Haiku call that never makes your prompt wait | `python3`, a logged-in Claude Code |
+| [drip-guardrails](plugins/drip-guardrails) | Allow / ask / deny on every tool call: no PR merges or protected-branch pushes, no production writes, reversible deletes only, secrets never read or copied. Works in every permission mode | `python3` |
 
 ## Tests
 
 ```bash
 bash plugins/drip-timestamps/test/run-tests.sh
 python3 plugins/drip-session-title/test/test_session_title.py
+python3 plugins/drip-guardrails/test/test_guard.py
 ```
 
 ## License
